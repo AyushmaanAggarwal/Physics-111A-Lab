@@ -38,12 +38,20 @@ def dmm_err_capacitance(capacitance, digits=0.01):
     return (2.5 / 100.0) * capacitance + 5 * digits
 
 
+def resistance_err(resistance):
+    return 0.01 * resistance
+
+
 # ADS Errors
-def ads_err_voltage(voltage):
+def ads_err_volt_voltmeter(voltage, digits=0.001):
+    return digits
+
+
+def ads_err_volt_oscilliscope(voltage, scale=0.5):
     ### WHAT IS V/div
-    if voltage >= 1:
+    if scale >= 1:
         return 0.1 + (0.5 / 100.0) * voltage
-    elif voltage <= 0.5:
+    elif scale <= 0.5:
         return 0.01 + (0.5 / 100.0) * voltage
 
 

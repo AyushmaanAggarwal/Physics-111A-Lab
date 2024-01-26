@@ -6,9 +6,11 @@
 # Covariance, Variance, Standard Deviation, Correlation Coefficents, more
 
 import numpy as np
+import matplotlib.colors as mcolors
 from uncertainties import ufloat
 
 ufloat_types = [type(ufloat(0, 0)), type(ufloat(0, 0) / ufloat(1, 1))]
+colors = list(mcolors.TABLEAU_COLORS)
 
 
 def covariance(x, y):
@@ -71,7 +73,7 @@ def common_uncertainty(y_pred, y, m, c):
 def simple_least_squares_linear(x, y):
     sigma_xy = covariance(x, y)
     sigma_2 = variance(x)
-    m = sigma_xy / sigma_2**2
+    m = sigma_xy / sigma_2
 
     y_mean = np.mean(y)
     x_mean = np.mean(x)
@@ -100,9 +102,23 @@ def weighted_least_squares_linear(x, y, err):
     y_pred = np.add(np.multiply(m, x), c)
     res = np.subtract(y_pred, y)
     chi_squared = sum_mult2(w, np.power(res, 2))
-    print(f"m = {m:.2}±{m_err:.2}, c = {c:.2}±{c_err:.2}, Χ² = {chi_squared:.2}")
-    print(f"Equation: y = ({m:.2}±{m_err:.2})*x + ({c:.2}±{c_err:.2})")
+    # print(f"m = {m:.2}±{m_err:.2}, c = {c:.2}±{c_err:.2}, Χ² = {chi_squared:.2}")
+    # print(f"Equation: y = ({m:.2}±{m_err:.2})*x + ({c:.2}±{c_err:.2})")
     return [m, c], [m_err, c_err], [y_pred, res], [chi_squared]
+
+
+def weighted_average(x):
+    """
+    Assumes a roughly normal distribution of error to weigh each error by the
+    inverse of the error squared
+    Arguments:
+    - x is the ufloat value with error
+
+    """
+    _, err = seperate_uncertainty_array(x)
+    weights = 1 / np.square(err)
+    weights = weights / sum(weights)
+    return np.sum(np.multiply(weights, x))
 
 
 def combine_linear_uncertainties(x, y, x_err, y_err):
@@ -127,19 +143,34 @@ def agreement_test(x, y):
 
 
 def get_uncertain_array(x, error):
-    return [ufloat(val, error) for val in x]
+    if type(error) in [type([]), type(np.array([]))]:
+        return [ufloat(val, abs(err)) for val, err in zip(x, error)]
+    return [ufloat(val, abs(error)) for val in x]
 
 
 def gen_ufloat(x, key):
-    return ufloat(x, key(x))
+    return ufloat(x, abs(key(x)))
 
 
 def gen_uncertain_array(x, key):
-    return [ufloat(val, key(val)) for val in x]
+    return [ufloat(val, key(abs(val))) for val in x]
 
 
 def seperate_uncertainty_array(x):
     return [val.nominal_value for val in x], [val.std_dev for val in x]
+
+
+def print_ufloats(x, digits=3):
+    if type(x) in [type(np.array([])), type([])]:
+        print("[", end="")
+        for val in x:
+            print(
+                str(np.round(val.n, digits)) + " ± " + str(np.round(val.s, digits)),
+                end=", ",
+            )
+        print("\b\b]")
+    else:
+        print(np.round(val.n, digits) + " ± " + np.round(val.s, digits))
 
 
 # Unit Conversions (used to determine error bounds)
