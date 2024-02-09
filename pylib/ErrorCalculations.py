@@ -98,3 +98,9 @@ def ads_err_voltage_output(voltage):
         return ufloat(voltage, 0.01 + 0.5 * abs(voltage))
     else:
         return ufloat(voltage, 0.025 + 0.5 * abs(voltage))
+
+
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod()
