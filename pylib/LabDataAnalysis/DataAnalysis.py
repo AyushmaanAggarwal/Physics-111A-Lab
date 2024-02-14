@@ -7,7 +7,7 @@
 
 import numpy as np
 import matplotlib.colors as mcolors
-from uncertainties import ufloat
+from uncertainties import ufloat, unumpy as unp
 
 ufloat_types = [type(ufloat(0, 0)), type(ufloat(0, 0) / ufloat(1, 1))]
 colors = list(mcolors.TABLEAU_COLORS)
@@ -35,7 +35,7 @@ def covariance(x, y):
 
 def variance(x):
     """
-    Computes variance across a variable 
+    Computes variance across a variable
 
     >>> variance([1,2,3])
     1.0
@@ -55,7 +55,7 @@ def std(x):
 def quartrature_sum(x):
     """
     Equivalent to calculating the euclidian distance between points in a list given a list of residuals/errors
-    
+
     >>> quartrature_sum([40, 20, 20])==np.sqrt(2400)
     True
     """
@@ -151,6 +151,17 @@ def weighted_least_squares_linear(x, y, err=[]):
     return [ufloat(m, m_err), ufloat(c, c_err)], [y_pred, res], [chi_squared]
 
 
+def seperate_uncertainty_array(x):
+    """
+    Seperates the nominal values and uncertainties of an ufloat array
+    Arguments:
+    - x is the ufloat value with error
+    >>> seperate_uncertainty_array(np.array([ufloat(0.0,2.0), ufloat(1.0, 1.0)]))
+    (array([0., 1.]), array([2., 1.]))
+    """
+    return unp.nominal_values(x), unp.std_devs(x)
+
+
 def weighted_average(x):
     """
     Computes the weighted average of a ufloat array
@@ -159,14 +170,14 @@ def weighted_average(x):
     Arguments:
     - x is the ufloat value with error
 
-    >>> weighted_average([ufloat(0.0,2.0), ufloat(1.0, 1.0)]).n 
+    >>> weighted_average([ufloat(0.0,2.0), ufloat(1.0, 1.0)]).n
     0.8
     >>> weighted_average([ufloat(0.0,1.0), ufloat(1.0, 1.0)]).n
     0.5
     """
     _, err = seperate_uncertainty_array(x)
     weights = 1 / np.square(err)
-    weights = weights / sum(weights)
+    weights = weights / np.sum(weights)
     return np.sum(np.multiply(weights, x))
 
 
@@ -222,6 +233,13 @@ def gen_ufloat(x, key):
 
 
 def gen_ufloat_array(x, key):
+    """
+    Checks if key produces a ufloat or just an integer(assumed to be error) to then
+    generate an array of ufloats
+    """
+    if type(key(abs(x[0]))) == type(ufloat(0, 0)):
+        return [key(val) for val in x]
+
     return [ufloat(val, key(abs(val))) for val in x]
 
 
